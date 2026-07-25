@@ -1,5 +1,9 @@
 # 📊 Análisis de Ventas: Exploración de Datos y Dashboard de KPIs
 
+## Enlaces
+
+- 📊 [Dashboard en Google Sheets](https://docs.google.com/spreadsheets/d/108INrM2HC7-LjY9cNMy8WI0emhVede0r4WAkztaTdEc/edit?usp=sharing)
+  
 ## Descripción del proyecto
 
 Este proyecto consiste en el análisis exploratorio de un conjunto de datos de ventas de una empresa distribuidora de modelos a escala (coches clásicos, motos, aviones, barcos, trenes y camiones), con el objetivo de **transformar datos transaccionales en bruto en un dashboard interactivo** que permita monitorizar el rendimiento comercial del negocio.
