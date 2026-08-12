@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Ventas y Beneficios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1c2363;
+    --navy-soft:#2b3380;
+    --green:#008257;
+    --cyan:#00beea;
+    --bg:#f4f6f9;
+    --text:#2d2d2d;
+    --text-soft:#6b7280;
+    --card:#ffffff;
+    --border:#e3e7ee;
+    --danger:#d64545;
+    --danger-soft:#fdeceb;
+    --green-soft:#e6f5ef;
+    --cyan-soft:#e5f9fd;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(28,35,99,0.04), 0 8px 24px -12px rgba(28,35,99,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  html,body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Sora',system-ui,sans-serif;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- Layout shell ---------- */
+  .shell{max-width:1440px;margin:0 auto;padding:20px 24px 60px;}
+
+  /* ---------- Header fijo (topbar + conexión + filtros) ---------- */
+  .sticky-header{
+    position:sticky;
+    top:0;
+    z-index:150;
+    background:var(--bg);
+    padding-top:20px;
+    margin-top:-20px;
+    padding-bottom:6px;
+    box-shadow:0 6px 16px -10px rgba(28,35,99,0.18);
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+    padding:18px 22px;
+    background:var(--navy);
+    border-radius:var(--radius);
+    color:#fff;
+    box-shadow:var(--shadow);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(135deg,var(--cyan),var(--green));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Sora',sans-serif;font-weight:800;color:var(--navy);font-size:15px;
+    flex-shrink:0;
+  }
+  .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:#c7ccec;}
+
+  .conn-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .status-pill{
+    display:flex;align-items:center;gap:7px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.14);
+    padding:7px 12px;border-radius:999px;
+    font-size:12.5px;color:#dfe2f5;
+  }
+  .status-dot{width:8px;height:8px;border-radius:50%;background:#9aa0c9;transition:.2s;}
+  .status-dot.ok{background:var(--green);box-shadow:0 0 0 3px rgba(0,130,87,0.25);}
+  .status-dot.err{background:var(--danger);box-shadow:0 0 0 3px rgba(214,69,69,0.25);}
+  .status-dot.loading{background:var(--cyan);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  select, .btn, .text-input{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+  }
+  .btn{
+    border:none;border-radius:9px;padding:8px 14px;
+    font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:.15s transform, .15s box-shadow, .15s opacity;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--cyan);color:var(--navy);}
+  .btn-primary:hover{box-shadow:0 4px 14px -4px rgba(0,190,234,0.6);}
+  .btn-ghost{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.18);}
+  .btn-ghost:hover{background:rgba(255,255,255,0.16);}
+  .btn-outline{background:#fff;color:var(--navy);border:1px solid var(--border);}
+  .btn-outline:hover{border-color:var(--navy);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  select.pill-select{
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.18);
+    color:#fff;padding:7px 10px;border-radius:9px;
+    outline:none;cursor:pointer;
+  }
+  select.pill-select option{color:#111;}
+
+  /* ---------- Connection panel ---------- */
+  .conn-panel{
+    margin-top:12px;
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 20px;
+    display:none;
+    gap:14px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+  }
+  .conn-panel.open{display:flex;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.4px;}
+  .text-input{
+    border:1px solid var(--border);border-radius:9px;
+    padding:9px 12px;min-width:340px;color:var(--text);outline:none;
+  }
+  .text-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,190,234,0.15);}
+  .field-note{font-size:11.5px;color:var(--text-soft);max-width:340px;}
+
+  /* ---------- Filter bar ---------- */
+  .filterbar{
+    margin-top:14px;
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px 18px;
+    display:flex;flex-wrap:wrap;
+    gap:10px;align-items:center;
+  }
+  .filterbar .ftitle{
+    font-size:12px;font-weight:700;color:var(--navy);
+    text-transform:uppercase;letter-spacing:.5px;
+    margin-right:4px;
+  }
+  .msel{position:relative;}
+  .msel-btn{
+    border:1px solid var(--border);background:#fbfcfe;
+    border-radius:9px;padding:8px 12px;font-size:13px;
+    color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px;
+    min-width:150px;justify-content:space-between;
+  }
+  .msel-btn:hover{border-color:var(--cyan);}
+  .msel-btn .count{
+    background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;
+    border-radius:999px;padding:1px 7px;
+  }
+  .msel-panel{
+    position:absolute;top:calc(100% + 6px);left:0;z-index:40;
+    background:#fff;border:1px solid var(--border);border-radius:10px;
+    box-shadow:0 10px 30px -8px rgba(28,35,99,0.25);
+    padding:8px;min-width:200px;max-height:260px;overflow:auto;
+    display:none;
+  }
+  .msel-panel.open{display:block;}
+  .msel-opt{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 8px;border-radius:6px;font-size:13px;cursor:pointer;
+  }
+  .msel-opt:hover{background:var(--bg);}
+  .msel-opt input{accent-color:var(--navy);cursor:pointer;}
+  .msel-actions{display:flex;justify-content:space-between;padding:6px 8px 2px;border-top:1px solid var(--border);margin-top:6px;}
+  .msel-actions a{font-size:11.5px;color:var(--cyan);cursor:pointer;font-weight:600;text-decoration:none;}
+
+  /* ---------- Year/Month tree filter ---------- */
+  #yearMonthFilter .msel-panel{min-width:220px;max-height:320px;}
+  .ym-year{border-bottom:1px solid var(--border);padding:2px 0;}
+  .ym-year:last-child{border-bottom:none;}
+  .ym-year summary{
+    display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;
+    font-size:13px;font-weight:700;color:var(--navy);list-style:none;
+  }
+  .ym-year summary::-webkit-details-marker{display:none;}
+  .ym-year summary .chev{margin-left:auto;font-size:10px;color:var(--text-soft);transition:transform .15s;}
+  .ym-year[open] summary .chev{transform:rotate(90deg);}
+  .ym-months{display:grid;grid-template-columns:1fr 1fr;gap:1px 6px;padding:2px 8px 8px 28px;}
+  .ym-month{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:6px;font-size:12.5px;cursor:pointer;}
+  .ym-month:hover{background:var(--bg);}
+  .ym-month input, .ym-year > summary input{accent-color:var(--navy);cursor:pointer;}
+
+  .clear-filters{
+    margin-left:auto;font-size:12.5px;color:var(--navy);font-weight:600;
+    cursor:pointer;display:flex;align-items:center;gap:5px;
+    padding:8px 10px;border-radius:8px;
+  }
+  .clear-filters:hover{background:var(--bg);}
+
+  /* ---------- Empty / error states ---------- */
+  .state-box{
+    margin-top:16px;background:var(--card);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:40px 24px;text-align:center;color:var(--text-soft);
+  }
+  .state-box h3{color:var(--navy);margin:10px 0 6px;}
+  .state-box.error h3{color:var(--danger);}
+  .state-box .icon{font-size:28px;}
+
+  /* ---------- KPI cards ---------- */
+  .kpi-grid{
+    margin-top:16px;display:grid;
+    grid-template-columns:repeat(6,1fr);gap:14px;
+  }
+  @media (max-width:1300px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  .kpi-card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:16px 18px;position:relative;overflow:hidden;
+  }
+  .kpi-card::before{
+    content:"";position:absolute;top:0;left:0;width:4px;height:100%;
+    background:var(--accent,var(--cyan));
+  }
+  .kpi-label{font-size:11.5px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;}
+  .kpi-value{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--navy);margin-top:6px;}
+  .kpi-sub{font-size:11.5px;color:var(--text-soft);margin-top:4px;}
+  .kpi-sub.up{color:var(--green);}
+  .kpi-sub.down{color:var(--danger);}
+
+  /* ---------- Charts grid ---------- */
+  .charts-grid{
+    margin-top:16px;display:grid;
+    grid-template-columns:1.3fr 1fr;gap:14px;
+  }
+  @media (max-width:980px){.charts-grid{grid-template-columns:1fr;}}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:700px){.row2{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:18px 20px;
+  }
+  .card h3{margin:0 0 2px;font-size:14.5px;color:var(--navy);}
+  .card .card-sub{font-size:11.5px;color:var(--text-soft);margin-bottom:10px;}
+  .chart-wrap{position:relative;height:260px;}
+  .chart-wrap.tall{height:320px;}
+
+  /* ---------- Map (Ventas por país) ---------- */
+  .map-container{position:relative;overflow:hidden;background:#fbfcfe;border-radius:10px;}
+  .map-container svg{width:100%;height:100%;display:block;}
+  .map-country{
+    stroke:#ffffff;
+    stroke-width:0.6;
+    transition:fill .12s;
+    cursor:pointer;
+  }
+  .map-country.has-data:hover{
+    stroke:#1c2363;
+    stroke-width:1.4;
+    filter:brightness(0.92);
+  }
+  .map-tooltip{
+    position:absolute;pointer-events:none;
+    background:var(--navy);color:#fff;
+    padding:8px 11px;border-radius:8px;font-size:12px;
+    box-shadow:0 8px 20px -6px rgba(28,35,99,0.4);
+    display:none;z-index:20;white-space:nowrap;
+    transform:translate(-50%,-115%);
+  }
+  .map-tooltip strong{display:block;font-size:12.5px;margin-bottom:2px;}
+  .map-status{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--text-soft);font-size:12.5px;background:#fbfcfe;
+  }
+  .map-status.hidden{display:none;}
+  .map-legend{
+    margin-top:10px;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text-soft);
+  }
+  .map-legend .grad{
+    flex:1;height:8px;border-radius:4px;
+    background:linear-gradient(90deg,#e5f9fd,#00beea,#008257,#1c2363);
+  }
+
+  /* gauge card */
+  .gauge-card{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .gauge-legend{display:flex;gap:16px;margin-top:8px;font-size:12px;}
+  .gauge-legend span{display:flex;align-items:center;gap:6px;color:var(--text-soft);}
+  .dotleg{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  /* ---------- Table ---------- */
+  .table-card{margin-top:14px;}
+  .table-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+  .table-search{
+    border:1px solid var(--border);border-radius:9px;padding:8px 12px;
+    font-size:13px;min-width:220px;outline:none;
+  }
+  .table-search:focus{border-color:var(--cyan);}
+  .tbl-scroll{overflow:auto;max-height:420px;border:1px solid var(--border);border-radius:10px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{
+    position:sticky;top:0;background:var(--navy);color:#fff;
+    text-align:left;padding:10px 12px;font-weight:600;white-space:nowrap;
+    cursor:pointer;user-select:none;
+  }
+  thead th:hover{background:var(--navy-soft);}
+  tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text);}
+  tbody tr:hover{background:var(--bg);}
+  .margin-pos{color:var(--green);font-weight:600;}
+  .margin-neg{color:var(--danger);font-weight:600;}
+  .badge{padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;}
+  .badge.Shipped{background:var(--green-soft);color:var(--green);}
+  .badge.Cancelled{background:var(--danger-soft);color:var(--danger);}
+  .badge.Disputed{background:#fdf2e5;color:#b06a00;}
+  .badge.OnHold, .badge\.On\ Hold{background:#f1eafd;color:#6d3fc4;}
+  .badge.InProcess, .badge\.In\ Process{background:var(--cyan-soft);color:#0089a8;}
+  .badge.Resolved{background:#eef0fb;color:var(--navy);}
+
+  .table-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--text-soft);}
+  .pager{display:flex;gap:6px;}
+  .pager button{
+    border:1px solid var(--border);background:#fff;border-radius:7px;
+    padding:5px 10px;font-size:12px;cursor:pointer;color:var(--navy);
+  }
+  .pager button:disabled{opacity:.4;cursor:not-allowed;}
+
+  footer.meta{text-align:center;color:var(--text-soft);font-size:11.5px;margin-top:22px;}
+
+  /* ---------- Loading overlay ---------- */
+  .loading-overlay{
+    position:fixed;inset:0;z-index:200;
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    background:rgba(244,246,249,0.88);
+    backdrop-filter:blur(2px);
+    opacity:0;transition:opacity .18s ease;
+  }
+  .loading-overlay.visible{display:flex;opacity:1;}
+  .loader-ring{position:relative;width:64px;height:64px;}
+  .loader-ring span{
+    position:absolute;inset:0;border-radius:50%;
+    border:4px solid transparent;
+    animation:spin 1.1s linear infinite;
+  }
+  .loader-ring span:nth-child(1){border-top-color:var(--navy); animation-duration:1s;}
+  .loader-ring span:nth-child(2){border-top-color:var(--cyan); inset:8px; animation-duration:1.4s; animation-direction:reverse;}
+  .loader-ring span:nth-child(3){border-top-color:var(--green); inset:16px; animation-duration:0.85s;}
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .loading-text{
+    font-family:'Sora',sans-serif;font-weight:600;font-size:13.5px;
+    color:var(--navy);letter-spacing:.2px;
+  }
+  /* pequeño indicador no bloqueante para refrescos cuando ya hay datos en pantalla */
+  .loading-overlay.subtle{ background:transparent; backdrop-filter:none; }
+  .loading-overlay.subtle .loader-ring{width:34px;height:34px;}
+  .loading-overlay.subtle .loader-ring span{border-width:3px;}
+  .loading-overlay.subtle{
+    inset:auto; top:14px; right:24px; left:auto; bottom:auto;
+    flex-direction:row; gap:10px; padding:8px 14px;
+    background:#fff; border-radius:999px; box-shadow:var(--shadow);
+  }
+  .loading-overlay.subtle .loading-text{font-size:12px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loader-ring"><span></span><span></span><span></span></div>
+    <div class="loading-text" id="loadingText">Cargando datos de Google Sheets…</div>
+  </div>
+
+  <!-- HEADER FIJO: topbar + conexión + filtros, siempre visibles al hacer scroll -->
+  <div class="sticky-header">
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">JC</div>
+        <div>
+          <h1>Dashboard de Ventas &amp; Beneficios</h1>
+          <p>Conectado a Google Sheets vía Apps Script</p>
+        </div>
+      </div>
+      <div class="conn-controls">
+        <div class="status-pill">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Sin conexión</span>
+        </div>
+        <select id="intervalSelect" class="pill-select" title="Intervalo de auto-actualización">
+          <option value="0">Auto-actualizar: Desactivado</option>
+          <option value="30000">Cada 30 segundos</option>
+          <option value="60000">Cada 1 minuto</option>
+          <option value="300000">Cada 5 minutos</option>
+          <option value="900000">Cada 15 minutos</option>
+          <option value="1800000">Cada 30 minutos</option>
+          <option value="3600000">Cada 60 minutos</option>
+        </select>
+        <button class="btn btn-primary" id="refreshBtn">⟳ Actualizar</button>
+        <button class="btn btn-ghost" id="configBtn">⚙ Conexión</button>
+      </div>
+    </div>
+
+    <!-- CONNECTION PANEL -->
+    <div class="conn-panel" id="connPanel">
+      <div class="field">
+        <label for="urlInput">URL del Web App (Apps Script)</label>
+        <input type="text" id="urlInput" class="text-input" placeholder="https://script.google.com/macros/s/XXXXXXXX/exec" value="https://script.google.com/macros/s/AKfycbwdTDzoWC6-Wb6zD8a-pJuj1p7rUA9nqxlYc_7-YK8ThT8_rxxZYz1me0gw63PESBzO/exec">
+        <span class="field-note">Pega aquí la URL que obtuviste al implementar el Web App (termina en /exec). Se usa solo en esta sesión del navegador.</span>
+      </div>
+      <button class="btn btn-primary" id="connectBtn">Conectar y cargar datos</button>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filterbar" id="filterBar" style="display:none;">
+      <span class="ftitle">Filtros</span>
+      <div class="msel" id="yearMonthFilter"><div class="msel-btn"><span>Año / Mes</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <div class="msel" data-field="QTR_ID"><div class="msel-btn"><span>Trimestre</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <div class="msel" data-field="PRODUCTLINE"><div class="msel-btn"><span>Línea de producto</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <div class="msel" data-field="COUNTRY"><div class="msel-btn"><span>País</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <div class="msel" data-field="TERRITORY"><div class="msel-btn"><span>Territorio</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <div class="msel" data-field="DEALSIZE"><div class="msel-btn"><span>Tamaño de trato</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <div class="msel" data-field="STATUS"><div class="msel-btn"><span>Estado</span><span class="count" style="display:none;"></span></div><div class="msel-panel"></div></div>
+      <span class="clear-filters" id="clearFilters">✕ Limpiar filtros</span>
+    </div>
+  </div>
+
+  <!-- STATE BOXES -->
+  <div class="state-box" id="emptyState">
+    <div class="icon">🔌</div>
+    <h3>Aún no hay datos conectados</h3>
+    <p>Abre <strong>Conexión</strong>, pega la URL de tu Web App de Apps Script y pulsa "Conectar y cargar datos".</p>
+  </div>
+  <div class="state-box error" id="errorState" style="display:none;">
+    <div class="icon">⚠️</div>
+    <h3>No se pudieron cargar los datos</h3>
+    <p id="errorMsg">Revisa que la URL sea correcta y que el Web App esté desplegado con acceso "Cualquier usuario".</p>
+  </div>
+
+  <!-- DASHBOARD CONTENT -->
+  <div id="dashboardContent" style="display:none;">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--accent:var(--navy);">
+        <div class="kpi-label">Beneficios Totales</div>
+        <div class="kpi-value mono" id="kpiSales">€0</div>
+        <div class="kpi-sub" id="kpiSalesSub">&nbsp;</div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--cyan);">
+        <div class="kpi-label">Ventas Totales</div>
+        <div class="kpi-value mono" id="kpiQty">0</div>
+        <div class="kpi-sub" id="kpiQtySub">unidades (QUANTITYORDERED)</div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--green);">
+        <div class="kpi-label">Margen promedio</div>
+        <div class="kpi-value mono" id="kpiMargin">0%</div>
+        <div class="kpi-sub" id="kpiMarginSub">ponderado por venta</div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--cyan);">
+        <div class="kpi-label">Pedidos</div>
+        <div class="kpi-value mono" id="kpiOrders">0</div>
+        <div class="kpi-sub" id="kpiOrdersSub">&nbsp;</div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--navy);">
+        <div class="kpi-label">Ticket promedio</div>
+        <div class="kpi-value mono" id="kpiTicket">€0</div>
+        <div class="kpi-sub">por línea de pedido</div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--danger);">
+        <div class="kpi-label">Líneas con margen negativo</div>
+        <div class="kpi-value mono" id="kpiNeg">0%</div>
+        <div class="kpi-sub" id="kpiNegSub">&nbsp;</div>
+      </div>
+    </div>
+
+    <!-- Row: evolution + gauge -->
+    <div class="charts-grid">
+      <div class="card">
+        <h3>Evolución de ventas y margen</h3>
+        <div class="card-sub">Por mes, según filtros activos</div>
+        <div class="chart-wrap tall"><canvas id="chartTrend"></canvas></div>
+      </div>
+      <div class="card gauge-card">
+        <h3 style="align-self:flex-start;">Salud de margen</h3>
+        <div class="card-sub" style="align-self:flex-start;">% de líneas rentables vs. con pérdida</div>
+        <div class="chart-wrap" style="height:220px;width:220px;"><canvas id="chartGauge"></canvas></div>
+        <div class="gauge-legend">
+          <span><i class="dotleg" style="background:var(--green);"></i>Margen positivo</span>
+          <span><i class="dotleg" style="background:var(--danger);"></i>Margen negativo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 1b: ventas a lo largo del tiempo (ancho completo, con etiquetas de valor) -->
+    <div class="card" style="margin-top:14px;">
+      <h3>Ventas a lo largo del tiempo</h3>
+      <div class="card-sub">Unidades vendidas (QUANTITYORDERED) por mes, según ORDERDATE</div>
+      <div class="chart-wrap tall" id="salesOverTimeOuter" style="overflow-x:auto; overflow-y:hidden;">
+        <div id="salesOverTimeInner" style="height:100%;"><canvas id="chartSalesOverTime"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 1c: evolución de los beneficios (ancho completo, por año) -->
+    <div class="card" style="margin-top:14px;">
+      <h3>Evolución de los beneficios</h3>
+      <div class="card-sub">Ventas totales por año (sin columna de costo real, se usa como proxy de beneficio)</div>
+      <div class="chart-wrap tall"><canvas id="chartProfitEvolution"></canvas></div>
+    </div>
+
+    <!-- Row 2: product line + country -->
+    <div class="row2" style="margin-top:14px;">
+      <div class="card">
+        <h3>Ventas y margen por línea de producto</h3>
+        <div class="card-sub">Barras: ventas · Línea: margen %</div>
+        <div class="chart-wrap"><canvas id="chartProductLine"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Ventas por país</h3>
+        <div class="card-sub">Mapa de calor por volumen de ventas</div>
+        <div class="chart-wrap tall map-container" id="countryMapContainer">
+          <div id="chartCountryMap" style="width:100%;height:100%;"></div>
+          <div id="countryMapTooltip" class="map-tooltip"></div>
+          <div id="countryMapStatus" class="map-status"></div>
+        </div>
+        <div class="map-legend" id="countryMapLegend"></div>
+      </div>
+    </div>
+
+    <!-- Row 2b: ventas por línea de producto + beneficios por semestre -->
+    <div class="row2" style="margin-top:14px;">
+      <div class="card">
+        <h3>Ventas por línea de producto</h3>
+        <div class="card-sub">Total de ventas por línea (eje horizontal)</div>
+        <div class="chart-wrap"><canvas id="chartSalesByLine"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Beneficios totales por semestre</h3>
+        <div class="card-sub">Por línea de producto (eje horizontal), comparando semestres</div>
+        <div class="chart-wrap"><canvas id="chartProfitBySemester"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2c: ventas por territorio + beneficios por territorio -->
+    <div class="row2" style="margin-top:14px;">
+      <div class="card">
+        <h3>Ventas por Territorio</h3>
+        <div class="card-sub">Unidades vendidas (QUANTITYORDERED) por territorio</div>
+        <div class="chart-wrap"><canvas id="chartSalesByTerritory"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Beneficios por Territorio</h3>
+        <div class="card-sub">Ventas totales (€) por territorio</div>
+        <div class="chart-wrap"><canvas id="chartProfitByTerritory"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2d: top clientes por ventas -->
+    <div class="card" style="margin-top:14px;">
+      <h3>Top clientes por ventas</h3>
+      <div class="card-sub">Top 10 clientes con mayor facturación, según filtros activos</div>
+      <div class="chart-wrap tall"><canvas id="chartTopCustomers"></canvas></div>
+    </div>
+
+    <!-- Row 2e: estado de pedidos en el tiempo -->
+    <div class="card" style="margin-top:14px;">
+      <h3>Estado de pedidos en el tiempo</h3>
+      <div class="card-sub">Cantidad de pedidos por estado, por mes (ORDERMONTH/YEAR_ID)</div>
+      <div class="chart-wrap tall" id="statusOverTimeOuter" style="overflow-x:auto; overflow-y:hidden;">
+        <div id="statusOverTimeInner" style="height:100%;"><canvas id="chartStatusOverTime"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 3: status + top/bottom margin -->
+    <div class="row2" style="margin-top:14px;">
+      <div class="card">
+        <h3>Pedidos por estado</h3>
+        <div class="card-sub">Distribución de STATUS</div>
+        <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Productos: mejor y peor margen</h3>
+        <div class="card-sub">Top 5 y bottom 5 por margen % promedio</div>
+        <div class="chart-wrap"><canvas id="chartTopBottom"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card table-card">
+      <div class="table-head">
+        <h3 style="margin:0;">Detalle de líneas de pedido</h3>
+        <input type="text" id="tableSearch" class="table-search" placeholder="Buscar cliente, producto, ciudad...">
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-key="ORDERNUMBER">Pedido</th>
+              <th data-key="ORDERDATE">Fecha</th>
+              <th data-key="CUSTOMERNAME">Cliente</th>
+              <th data-key="PRODUCTLINE">Línea</th>
+              <th data-key="PRODUCTCODE">Producto</th>
+              <th data-key="QUANTITYORDERED">Cant.</th>
+              <th data-key="SALES">Ventas</th>
+              <th data-key="MARGIN_PCT">Margen %</th>
+              <th data-key="DEALSIZE">Trato</th>
+              <th data-key="COUNTRY">País</th>
+              <th data-key="STATUS">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="table-foot">
+        <span id="tableCount">0 líneas</span>
+        <div class="pager">
+          <button id="prevPage">‹ Anterior</button>
+          <span id="pageLabel" style="align-self:center;padding:0 6px;">1 / 1</span>
+          <button id="nextPage">Siguiente ›</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="meta" id="lastUpdated"></footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ CHART.JS LOADER (con CDNs de respaldo) ============ */
+  function loadScript(src){
+    return new Promise((resolve, reject)=>{
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('No se pudo cargar: ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  const CHART_CDNS = [
+    'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+    'https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js'
+  ];
+  async function ensureChartJs(){
+    if(window.Chart) return;
+    let lastErr = null;
+    for(const url of CHART_CDNS){
+      try{
+        await loadScript(url);
+        if(window.Chart) return;
+      }catch(e){ lastErr = e; }
+    }
+    throw new Error('No se pudo cargar la librería de gráficos (Chart.js) desde ningún CDN. Revisa tu conexión a internet o si un bloqueador de contenido está impidiendo cargar scripts externos.');
+  }
+  const chartReady = ensureChartJs(); // se dispara ya, en paralelo con la carga de datos
+
+  /* ============ DATALABELS PLUGIN LOADER (etiquetas de valor en el gráfico "Ventas a lo largo del tiempo") ============ */
+  const DATALABELS_CDNS = [
+    'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js',
+    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js',
+    'https://unpkg.com/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js'
+  ];
+  let dataLabelsReady = false;
+  async function ensureDataLabelsPlugin(){
+    await chartReady;
+    if(window.ChartDataLabels){ registerDataLabels(); return; }
+    for(const url of DATALABELS_CDNS){
+      try{
+        await loadScript(url);
+        if(window.ChartDataLabels){ registerDataLabels(); return; }
+      }catch(e){}
+    }
+    // Si no carga, el dashboard sigue funcionando: simplemente no se muestran etiquetas sobre los puntos.
+    dataLabelsReady = false;
+  }
+  function registerDataLabels(){
+    try{
+      window.Chart.register(window.ChartDataLabels);
+      window.Chart.defaults.set('plugins.datalabels', { display:false }); // apagado por defecto; se activa solo donde se necesita
+      dataLabelsReady = true;
+    }catch(e){ dataLabelsReady = false; }
+  }
+  const dataLabelsPluginReady = ensureDataLabelsPlugin();
+
+  /* ============ MAP LOADER (D3 + topojson, con CDNs de respaldo) ============ */
+  const MAP_LIB_CDNS = {
+    d3: [
+      'https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js',
+      'https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js',
+      'https://unpkg.com/d3@7/dist/d3.min.js'
+    ],
+    topojson: [
+      'https://cdnjs.cloudflare.com/ajax/libs/topojson-client/3.1.0/topojson-client.min.js',
+      'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js',
+      'https://unpkg.com/topojson-client@3/dist/topojson-client.min.js'
+    ]
+  };
+  const WORLD_ATLAS_URLS = [
+    'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
+    'https://unpkg.com/world-atlas@2/countries-110m.json'
+  ];
+  async function ensureMapLibs(){
+    if(!window.d3){
+      let ok=false;
+      for(const url of MAP_LIB_CDNS.d3){ try{ await loadScript(url); if(window.d3){ ok=true; break; } }catch(e){} }
+      if(!ok) throw new Error('No se pudo cargar D3.js.');
+    }
+    if(!window.topojson){
+      let ok=false;
+      for(const url of MAP_LIB_CDNS.topojson){ try{ await loadScript(url); if(window.topojson){ ok=true; break; } }catch(e){} }
+      if(!ok) throw new Error('No se pudo cargar topojson-client.');
+    }
+  }
+  let worldFeaturesCache = null;
+  async function loadWorldAtlas(){
+    if(worldFeaturesCache) return worldFeaturesCache;
+    let lastErr = null;
+    for(const url of WORLD_ATLAS_URLS){
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const topo = await res.json();
+        worldFeaturesCache = window.topojson.feature(topo, topo.objects.countries).features;
+        return worldFeaturesCache;
+      }catch(e){ lastErr = e; }
+    }
+    throw new Error('No se pudo descargar el mapa mundial base.');
+  }
+  // Nombre de país (tal como suele venir en datasets de ventas) -> código numérico ISO-3166-1 (usado por world-atlas)
+  const COUNTRY_ISO_MAP = {
+    'USA':840,'United States':840,'Estados Unidos':840,
+    'UK':826,'United Kingdom':826,'Reino Unido':826,
+    'France':250,'Francia':250,
+    'Germany':276,'Alemania':276,
+    'Austria':40,
+    'Spain':724,'España':724,
+    'Sweden':752,'Suecia':752,
+    'Italy':380,'Italia':380,
+    'Finland':246,'Finlandia':246,
+    'Singapore':702,'Singapur':702,
+    'Canada':124,'Canadá':124,
+    'Japan':392,'Japón':392,
+    'Australia':36,
+    'Norway':578,'Noruega':578,
+    'Ireland':372,'Irlanda':372,
+    'Belgium':56,'Bélgica':56,
+    'Philippines':608,'Filipinas':608,
+    'Denmark':208,'Dinamarca':208,
+    'Switzerland':756,'Suiza':756,
+    'Netherlands':528,'Holanda':528,'Países Bajos':528,
+    'Portugal':620,
+    'Mexico':484,'México':484,
+    'Brazil':76,'Brasil':76,
+    'Argentina':32,
+    'China':156,
+    'India':356,
+    'South Korea':410,'Corea del Sur':410,
+    'Poland':616,'Polonia':616,
+    'Russia':643,'Rusia':643,
+    'South Africa':710,'Sudáfrica':710,
+    'New Zealand':554,'Nueva Zelanda':554,
+    'Greece':300,'Grecia':300,
+    'Hungary':348,'Hungría':348,
+    'Czech Republic':203,'República Checa':203,
+    'Turkey':792,'Turquía':792,
+    'Israel':376,
+    'Malaysia':458,'Malasia':458,
+    'Thailand':764,'Tailandia':764,
+    'Indonesia':360,
+    'Colombia':170,
+    'Chile':152,
+    'Peru':604,'Perú':604,
+    'Saudi Arabia':682,'Arabia Saudita':682,
+    'UAE':784,'United Arab Emirates':784,
+    'Egypt':818,'Egipto':818,
+    'Nigeria':566
+  };
+
+  /* ============ STATE ============ */
+  const state = {
+    rawData: [],
+    filtered: [],
+    filters: {}, // field -> Set of selected values
+    fieldOptions: {}, // field -> sorted array of all values
+    sortKey: 'ORDERDATE',
+    sortDir: 'desc',
+    search: '',
+    page: 1,
+    pageSize: 25,
+    timer: null,
+    loading: false
+  };
+
+  const FILTER_FIELDS = ['QTR_ID','PRODUCTLINE','COUNTRY','TERRITORY','DEALSIZE','STATUS'];
+
+  const els = {
+    statusDot: document.getElementById('statusDot'),
+    statusText: document.getElementById('statusText'),
+    intervalSelect: document.getElementById('intervalSelect'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    configBtn: document.getElementById('configBtn'),
+    connPanel: document.getElementById('connPanel'),
+    urlInput: document.getElementById('urlInput'),
+    connectBtn: document.getElementById('connectBtn'),
+    filterBar: document.getElementById('filterBar'),
+    emptyState: document.getElementById('emptyState'),
+    errorState: document.getElementById('errorState'),
+    errorMsg: document.getElementById('errorMsg'),
+    dashboardContent: document.getElementById('dashboardContent'),
+    lastUpdated: document.getElementById('lastUpdated'),
+    clearFilters: document.getElementById('clearFilters'),
+    tableSearch: document.getElementById('tableSearch'),
+    tableBody: document.getElementById('tableBody'),
+    tableCount: document.getElementById('tableCount'),
+    pageLabel: document.getElementById('pageLabel'),
+    prevPage: document.getElementById('prevPage'),
+    nextPage: document.getElementById('nextPage'),
+  };
+
+  /* ============ HELPERS ============ */
+  function toNumber(v){
+    if(typeof v === 'number') return v;
+    if(v === null || v === undefined || v === '') return 0;
+    let s = String(v).trim();
+    s = s.replace(/[€\s]/g,'');
+    // handle formats like 5.510,54 (thousands dot, decimal comma)
+    if(/,\d{1,2}$/.test(s) && s.includes('.')){
+      s = s.replace(/\./g,'').replace(',', '.');
+    } else if(/,\d{1,2}$/.test(s)){
+      s = s.replace(',', '.');
+    } else {
+      s = s.replace(/,/g,'');
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function toDate(v){
+    if(v instanceof Date) return v;
+    if(typeof v === 'number'){
+      // could already be epoch ms
+      return new Date(v);
+    }
+    const s = String(v);
+    let d = new Date(s);
+    if(!isNaN(d.getTime())) return d;
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m){
+      return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+    }
+    return new Date(NaN);
+  }
+
+  function fmtEUR(n){
+    return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+  }
+  function fmtEURFull(n){
+    return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+  }
+  function fmtCompact(n){
+    return new Intl.NumberFormat('es-ES',{notation:'compact',maximumFractionDigits:1}).format(n);
+  }
+  // Formato tipo "99,07k" (usado en el KPI de Ventas Totales/unidades)
+  function fmtCompactK(n){
+    const abs = Math.abs(n);
+    if(abs >= 1000000) return (n/1000000).toFixed(2).replace('.',',') + 'M';
+    if(abs >= 1000) return (n/1000).toFixed(2).replace('.',',') + 'k';
+    return fmtNum(n);
+  }
+  const MONTH_ABBR_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
+  const MONTH_FULL_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function formatMonthLabel(key){
+    const parts = key.split('-');
+    const y = parts[0], m = parseInt(parts[1],10);
+    return y + '-' + (MONTH_FULL_ES[m-1] || m);
+  }
+  // Calcula un incremento "redondo" (1, 2 o 5 × potencia de 10) para que el eje muestre
+  // valores limpios como 1.000.000,00 € / 2.000.000,00 € en vez de saltos irregulares.
+  function niceStep(maxValue, targetTicks){
+    targetTicks = targetTicks || 5;
+    if(!maxValue || maxValue <= 0) return 1;
+    const rawStep = maxValue / targetTicks;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const residual = rawStep / magnitude;
+    let niceResidual;
+    if(residual > 5) niceResidual = 10;
+    else if(residual > 2) niceResidual = 5;
+    else if(residual > 1) niceResidual = 2;
+    else niceResidual = 1;
+    return niceResidual * magnitude;
+  }
+  function fmtNum(n){
+    return new Intl.NumberFormat('es-ES').format(n);
+  }
+  function fmtPct(n){
+    return (n>=0?'':'') + n.toFixed(1).replace('.',',') + '%';
+  }
+  function fmtDate(d){
+    if(!(d instanceof Date) || isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+  function monthKey(d){
+    if(!(d instanceof Date) || isNaN(d.getTime())) return 'N/D';
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+
+  /* ============ DATA LOADING ============ */
+  function setStatus(kind, text){
+    els.statusDot.className = 'status-dot' + (kind ? ' '+kind : '');
+    els.statusText.textContent = text;
+  }
+
+  function getStoredUrl(){ return els.urlInput.value.trim(); }
+
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const loadingText = document.getElementById('loadingText');
+  function showLoadingOverlay(show, text){
+    const hasData = state.rawData.length > 0;
+    loadingOverlay.classList.toggle('subtle', hasData); // pantalla completa la 1a carga, discreto en refrescos
+    loadingText.textContent = text || (hasData ? 'Actualizando…' : 'Cargando datos de Google Sheets…');
+    loadingOverlay.classList.toggle('visible', !!show);
+  }
+
+  async function fetchData(){
+    const url = getStoredUrl();
+    if(!url){
+      els.connPanel.classList.add('open');
+      setStatus('err','Falta la URL');
+      return;
+    }
+    if(state.loading) return;
+    state.loading = true;
+    setStatus('loading','Cargando...');
+    els.refreshBtn.disabled = true;
+    showLoadingOverlay(true);
+    try{
+      const res = await fetch(url, {method:'GET'});
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if(!Array.isArray(json)) throw new Error('La respuesta no es un arreglo JSON de filas.');
+      state.rawData = json.map(normalizeRow);
+      await chartReady;
+      try{ await dataLabelsPluginReady; }catch(e){}
+      onDataLoaded();
+      setStatus('ok','Conectado');
+      els.errorState.style.display = 'none';
+    }catch(err){
+      console.error(err);
+      setStatus('err','Error de conexión');
+      els.errorMsg.textContent = 'Detalle: ' + err.message + '. Revisa que la URL termine en /exec y que el acceso esté como "Cualquier usuario".';
+      els.errorState.style.display = 'block';
+      els.dashboardContent.style.display = 'none';
+      els.filterBar.style.display = 'none';
+      els.emptyState.style.display = 'none';
+    } finally {
+      state.loading = false;
+      els.refreshBtn.disabled = false;
+      els.lastUpdated.textContent = 'Última actualización: ' + new Date().toLocaleString('es-ES');
+      showLoadingOverlay(false);
+    }
+  }
+
+  function normalizeRow(r){
+    const sales = toNumber(r.SALES);
+    const qty = toNumber(r.QUANTITYORDERED);
+    const msrp = toNumber(r.MSRP);
+    const priceEach = toNumber(r.PRICEEACH);
+    const expected = qty * msrp;
+    const marginPct = expected > 0 ? ((expected - sales) / expected) * 100 : 0;
+
+    // Tu Sheet usa "ORDER" para la fecha completa y "ORDERMONTH" para el mes
+    // (no "ORDERDATE" ni "MONTH_ID", que fue lo que causaba el bug de fechas).
+    let date = toDate(r.ORDER !== undefined ? r.ORDER : r.ORDERDATE);
+    const dateValid = (date instanceof Date) && !isNaN(date.getTime());
+
+    const yearId = r.YEAR_ID !== undefined && r.YEAR_ID !== '' ? String(r.YEAR_ID) : (dateValid ? String(date.getFullYear()) : 'N/D');
+    let monthNum = parseInt(r.ORDERMONTH !== undefined ? r.ORDERMONTH : r.MONTH_ID, 10);
+    if(!monthNum && dateValid) monthNum = date.getMonth()+1;
+    if(!monthNum) monthNum = 1;
+    const monthStr = String(monthNum).padStart(2,'0');
+
+    // Si la fecha no se pudo interpretar igual, se reconstruye usando YEAR_ID/ORDERMONTH,
+    // que sí son confiables, para no perder la fecha.
+    if(!dateValid){
+      const fallbackYear = parseInt(yearId, 10);
+      if(!isNaN(fallbackYear)) date = new Date(fallbackYear, monthNum - 1, 1);
+    }
+
+    return Object.assign({}, r, {
+      SALES: sales,
+      QUANTITYORDERED: qty,
+      MSRP: msrp,
+      PRICEEACH: priceEach,
+      MARGIN_PCT: marginPct,
+      ORDERDATE: date,
+      YEAR_ID: yearId,
+      MONTH_NUM: monthNum,
+      YEAR_MONTH: yearId + '-' + monthStr,
+      QTR_ID: r.QTR_ID !== undefined ? String(r.QTR_ID) : '',
+      MONTH_ID: String(monthNum),
+      PRODUCTLINE: r.PRODUCTLINE || 'N/D',
+      COUNTRY: r.COUNTRY || 'N/D',
+      TERRITORY: r.TERRITORY || 'N/D',
+      DEALSIZE: r.DEALSIZE || 'N/D',
+      STATUS: r.STATUS || 'N/D'
+    });
+  }
+
+  function onDataLoaded(){
+    els.emptyState.style.display = 'none';
+    els.errorState.style.display = 'none';
+    els.filterBar.style.display = 'flex';
+    els.dashboardContent.style.display = 'block';
+    buildFilterOptions();
+    applyFiltersAndRender();
+  }
+
+  /* ============ FILTERS ============ */
+  function buildFilterOptions(){
+    FILTER_FIELDS.forEach(field=>{
+      const vals = new Set();
+      state.rawData.forEach(r => vals.add(String(r[field] !== undefined && r[field] !== '' ? r[field] : 'N/D')));
+      const sorted = Array.from(vals).sort((a,b)=> {
+        const na = parseFloat(a), nb = parseFloat(b);
+        if(!isNaN(na) && !isNaN(nb)) return na-nb;
+        return a.localeCompare(b);
+      });
+      state.fieldOptions[field] = sorted;
+      // Por defecto todos los valores quedan seleccionados (sin filtrar nada)
+      state.filters[field] = new Set(sorted);
+    });
+    buildYearMonthOptions();
+    renderFilterPanels();
+  }
+
+  /* ---------- Filtro jerárquico Año -> Meses ---------- */
+  function buildYearMonthOptions(){
+    const tree = {}; // { '2003': Set(1,2,3...) }
+    state.rawData.forEach(r=>{
+      if(!tree[r.YEAR_ID]) tree[r.YEAR_ID] = new Set();
+      tree[r.YEAR_ID].add(r.MONTH_NUM);
+    });
+    const years = Object.keys(tree).sort();
+    state.yearMonthTree = years.map(y => ({ year: y, months: Array.from(tree[y]).sort((a,b)=>a-b) }));
+    // Por defecto, todas las combinaciones año-mes quedan seleccionadas
+    const allKeys = [];
+    state.yearMonthTree.forEach(({year, months}) => months.forEach(m => allKeys.push(year + '-' + String(m).padStart(2,'0'))));
+    state.filters.YEAR_MONTH = new Set(allKeys);
+    state.yearMonthTotal = allKeys.length;
+    renderYearMonthPanel();
+  }
+
+  function renderYearMonthPanel(){
+    const mselEl = document.getElementById('yearMonthFilter');
+    const panel = mselEl.querySelector('.msel-panel');
+    panel.innerHTML = '';
+
+    state.yearMonthTree.forEach(({year, months})=>{
+      const details = document.createElement('details');
+      details.className = 'ym-year';
+      details.open = true;
+
+      const summary = document.createElement('summary');
+      const yearCb = document.createElement('input');
+      yearCb.type = 'checkbox';
+      const yearKeys = months.map(m => year + '-' + String(m).padStart(2,'0'));
+      yearCb.checked = yearKeys.every(k => state.filters.YEAR_MONTH.has(k));
+      yearCb.indeterminate = !yearCb.checked && yearKeys.some(k => state.filters.YEAR_MONTH.has(k));
+      yearCb.addEventListener('click', (e)=> e.stopPropagation());
+      yearCb.addEventListener('change', ()=>{
+        yearKeys.forEach(k => { if(yearCb.checked) state.filters.YEAR_MONTH.add(k); else state.filters.YEAR_MONTH.delete(k); });
+        monthsContainer.querySelectorAll('input').forEach(cb => cb.checked = yearCb.checked);
+        updateYearMonthCount();
+        applyFiltersAndRender();
+      });
+      summary.appendChild(yearCb);
+      const yearLabel = document.createElement('span');
+      yearLabel.textContent = year;
+      summary.appendChild(yearLabel);
+      const chev = document.createElement('span');
+      chev.className = 'chev';
+      chev.textContent = '▸';
+      summary.appendChild(chev);
+      details.appendChild(summary);
+
+      const monthsContainer = document.createElement('div');
+      monthsContainer.className = 'ym-months';
+      months.forEach(m=>{
+        const key = year + '-' + String(m).padStart(2,'0');
+        const lbl = document.createElement('label');
+        lbl.className = 'ym-month';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = state.filters.YEAR_MONTH.has(key);
+        cb.addEventListener('change', ()=>{
+          if(cb.checked) state.filters.YEAR_MONTH.add(key); else state.filters.YEAR_MONTH.delete(key);
+          const allChecked = yearKeys.every(k => state.filters.YEAR_MONTH.has(k));
+          const noneChecked = yearKeys.every(k => !state.filters.YEAR_MONTH.has(k));
+          yearCb.checked = allChecked;
+          yearCb.indeterminate = !allChecked && !noneChecked;
+          updateYearMonthCount();
+          applyFiltersAndRender();
+        });
+        lbl.appendChild(cb);
+        const span = document.createElement('span');
+        span.textContent = MONTH_ABBR_ES[m-1] || m;
+        lbl.appendChild(span);
+        monthsContainer.appendChild(lbl);
+      });
+      details.appendChild(monthsContainer);
+      panel.appendChild(details);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'msel-actions';
+    actions.innerHTML = '<a data-act="all">Todos</a><a data-act="none">Ninguno</a>';
+    actions.querySelector('[data-act="all"]').addEventListener('click', ()=>{
+      const allKeys = [];
+      state.yearMonthTree.forEach(({year, months}) => months.forEach(m => allKeys.push(year + '-' + String(m).padStart(2,'0'))));
+      state.filters.YEAR_MONTH = new Set(allKeys);
+      renderYearMonthPanel();
+      updateYearMonthCount();
+      applyFiltersAndRender();
+    });
+    actions.querySelector('[data-act="none"]').addEventListener('click', ()=>{
+      state.filters.YEAR_MONTH = new Set();
+      renderYearMonthPanel();
+      updateYearMonthCount();
+      applyFiltersAndRender();
+    });
+    panel.appendChild(actions);
+
+    panel.onclick = (e)=> e.stopPropagation();
+    const btn = mselEl.querySelector('.msel-btn');
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      document.querySelectorAll('.msel-panel.open').forEach(p=>{ if(p!==panel) p.classList.remove('open'); });
+      panel.classList.toggle('open');
+    };
+    updateYearMonthCount();
+  }
+
+  function updateYearMonthCount(){
+    const mselEl = document.getElementById('yearMonthFilter');
+    const countEl = mselEl.querySelector('.count');
+    const n = state.filters.YEAR_MONTH.size;
+    if(n === state.yearMonthTotal || n === 0){ countEl.style.display = 'none'; }
+    else { countEl.style.display = 'inline-block'; countEl.textContent = n; }
+  }
+
+  function renderFilterPanels(){
+    document.querySelectorAll('.msel[data-field]').forEach(mselEl=>{
+      const field = mselEl.dataset.field;
+      const panel = mselEl.querySelector('.msel-panel');
+      const btn = mselEl.querySelector('.msel-btn');
+      const countEl = btn.querySelector('.count');
+      panel.innerHTML = '';
+      state.fieldOptions[field].forEach(val=>{
+        const id = 'opt_' + field + '_' + val.replace(/[^a-zA-Z0-9]/g,'_');
+        const row = document.createElement('label');
+        row.className = 'msel-opt';
+        row.innerHTML = '<input type="checkbox" id="'+id+'" value="'+val.replace(/"/g,'&quot;')+'"> <span>'+val+'</span>';
+        const checkbox = row.querySelector('input');
+        checkbox.checked = state.filters[field].has(val);
+        checkbox.addEventListener('change', ()=>{
+          if(checkbox.checked) state.filters[field].add(val);
+          else state.filters[field].delete(val);
+          updateFilterCount(field);
+          applyFiltersAndRender();
+        });
+        panel.appendChild(row);
+      });
+      const actions = document.createElement('div');
+      actions.className = 'msel-actions';
+      actions.innerHTML = '<a data-act="all">Todos</a><a data-act="none">Ninguno</a>';
+      actions.querySelector('[data-act="all"]').addEventListener('click', ()=>{
+        state.filters[field] = new Set(state.fieldOptions[field]);
+        panel.querySelectorAll('input').forEach(cb=>cb.checked = true);
+        updateFilterCount(field);
+        applyFiltersAndRender();
+      });
+      actions.querySelector('[data-act="none"]').addEventListener('click', ()=>{
+        state.filters[field] = new Set();
+        panel.querySelectorAll('input').forEach(cb=>cb.checked = false);
+        updateFilterCount(field);
+        applyFiltersAndRender();
+      });
+      panel.appendChild(actions);
+      updateFilterCount(field);
+
+      // Evita que un clic en cualquier parte del panel (checkboxes incluidos)
+      // burbujee hasta el listener global que cierra los paneles abiertos.
+      panel.onclick = (e)=> e.stopPropagation();
+
+      btn.onclick = (e)=>{
+        e.stopPropagation();
+        document.querySelectorAll('.msel-panel.open').forEach(p=>{ if(p!==panel) p.classList.remove('open'); });
+        panel.classList.toggle('open');
+      };
+    });
+  }
+
+  function updateFilterCount(field){
+    const mselEl = document.querySelector('.msel[data-field="'+field+'"]');
+    const countEl = mselEl.querySelector('.count');
+    const n = state.filters[field].size;
+    const total = state.fieldOptions[field] ? state.fieldOptions[field].length : 0;
+    // Solo se muestra el contador cuando el filtro está activo (no todos seleccionados)
+    if(n === total || n === 0){ countEl.style.display = 'none'; }
+    else { countEl.style.display = 'inline-block'; countEl.textContent = n; }
+  }
+
+  document.addEventListener('click', ()=>{
+    document.querySelectorAll('.msel-panel.open').forEach(p=>p.classList.remove('open'));
+  });
+
+  els.clearFilters.addEventListener('click', ()=>{
+    FILTER_FIELDS.forEach(f => state.filters[f] = new Set(state.fieldOptions[f] || []));
+    const allKeys = [];
+    (state.yearMonthTree || []).forEach(({year, months}) => months.forEach(m => allKeys.push(year + '-' + String(m).padStart(2,'0'))));
+    state.filters.YEAR_MONTH = new Set(allKeys);
+    renderFilterPanels();
+    renderYearMonthPanel();
+    applyFiltersAndRender();
+  });
+
+  function applyFiltersAndRender(){
+    state.filtered = state.rawData.filter(r=>{
+      if(state.filters.YEAR_MONTH && !state.filters.YEAR_MONTH.has(r.YEAR_MONTH)) return false;
+      return FILTER_FIELDS.every(field=>{
+        const sel = state.filters[field];
+        const val = String(r[field] !== undefined && r[field] !== '' ? r[field] : 'N/D');
+        return sel.has(val);
+      });
+    });
+    state.page = 1;
+    renderKPIs();
+    renderCharts();
+    renderTable();
+  }
+
+  /* ============ KPIs ============ */
+  function renderKPIs(){
+    const rows = state.filtered;
+    const totalSales = rows.reduce((s,r)=>s+r.SALES,0);
+    const totalQty = rows.reduce((s,r)=>s+r.QUANTITYORDERED,0);
+    const orders = new Set(rows.map(r=>r.ORDERNUMBER)).size;
+    const avgTicket = rows.length ? totalSales/rows.length : 0;
+    let weightedMarginNum = 0, weightedMarginDen = 0;
+    let negCount = 0;
+    rows.forEach(r=>{
+      weightedMarginNum += r.MARGIN_PCT * r.SALES;
+      weightedMarginDen += r.SALES;
+      if(r.MARGIN_PCT < 0) negCount++;
+    });
+    const avgMargin = weightedMarginDen ? weightedMarginNum/weightedMarginDen : 0;
+    const negPct = rows.length ? (negCount/rows.length)*100 : 0;
+
+    document.getElementById('kpiSales').textContent = fmtEUR(totalSales);
+    document.getElementById('kpiSalesSub').textContent = fmtNum(rows.length) + ' líneas de pedido';
+    document.getElementById('kpiQty').textContent = fmtCompactK(totalQty);
+    document.getElementById('kpiMargin').textContent = fmtPct(avgMargin);
+    document.getElementById('kpiOrders').textContent = fmtNum(orders);
+    document.getElementById('kpiTicket').textContent = fmtEUR(avgTicket);
+    document.getElementById('kpiNeg').textContent = fmtPct(negPct);
+    document.getElementById('kpiNegSub').textContent = negCount + ' de ' + rows.length + ' líneas';
+    const negSub = document.getElementById('kpiNeg');
+    negSub.style.color = negPct > 15 ? 'var(--danger)' : 'var(--navy)';
+  }
+
+  /* ============ CHARTS ============ */
+  let charts = {};
+  const PALETTE = ['#1c2363','#008257','#00beea','#6d3fc4','#b06a00','#d64545','#0089a8','#4c5aa8'];
+
+  function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
+
+  function renderCharts(){
+    renderTrendChart();
+    renderGaugeChart();
+    renderSalesOverTimeChart();
+    renderProfitEvolutionChart();
+    renderProductLineChart();
+    renderCountryMap();
+    renderSalesByLineChart();
+    renderProfitBySemesterChart();
+    renderSalesByTerritoryChart();
+    renderProfitByTerritoryChart();
+    renderTopCustomersChart();
+    renderStatusOverTimeChart();
+    renderStatusChart();
+    renderTopBottomChart();
+  }
+
+  function renderTrendChart(){
+    const map = {};
+    state.filtered.forEach(r=>{
+      const k = r.YEAR_MONTH; // usa YEAR_ID/MONTH_ID (ya validados), no ORDERDATE
+      if(!map[k]) map[k] = {sales:0, marginNum:0, marginDen:0};
+      map[k].sales += r.SALES;
+      map[k].marginNum += r.MARGIN_PCT * r.SALES;
+      map[k].marginDen += r.SALES;
+    });
+    const labels = Object.keys(map).sort();
+    const sales = labels.map(k=>map[k].sales);
+    const margin = labels.map(k=> map[k].marginDen ? map[k].marginNum/map[k].marginDen : 0);
+
+    destroyChart('trend');
+    const ctx = document.getElementById('chartTrend').getContext('2d');
+    charts.trend = new Chart(ctx, {
+      data:{
+        labels: labels,
+        datasets:[
+          {type:'bar', label:'Ventas', data: sales, backgroundColor:'#00beea', borderRadius:4, yAxisID:'y', order:2},
+          {type:'line', label:'Margen %', data: margin, borderColor:'#008257', backgroundColor:'#008257', tension:.3, yAxisID:'y1', order:1, pointRadius:2}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{mode:'index', intersect:false},
+        scales:{
+          y:{ beginAtZero:true, ticks:{ callback:(v)=>fmtEUR(v) }, grid:{color:'#eef1f6'} },
+          y1:{ position:'right', ticks:{ callback:(v)=>(Math.round(v*10)/10)+'%' }, grid:{display:false} },
+          x:{ grid:{display:false} }
+        },
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10,usePointStyle:true}} }
+      }
+    });
+  }
+
+  function renderGaugeChart(){
+    const rows = state.filtered;
+    const pos = rows.filter(r=>r.MARGIN_PCT>=0).length;
+    const neg = rows.length - pos;
+    destroyChart('gauge');
+    const ctx = document.getElementById('chartGauge').getContext('2d');
+    charts.gauge = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels:['Positivo','Negativo'], datasets:[{ data:[pos,neg], backgroundColor:['#008257','#d64545'], borderWidth:0, cutout:'72%' }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> c.label + ': ' + c.parsed + ' líneas'}} }
+      },
+      plugins:[{
+        id:'centerText',
+        afterDraw(chart){
+          const {ctx, chartArea:{width,height,left,top}} = chart;
+          const pct = rows.length ? Math.round((pos/rows.length)*100) : 0;
+          ctx.save();
+          ctx.font = "700 26px 'IBM Plex Mono', monospace";
+          ctx.fillStyle = '#1c2363';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(pct+'%', left+width/2, top+height/2 - 8);
+          ctx.font = "600 11px 'Inter', sans-serif";
+          ctx.fillStyle = '#6b7280';
+          ctx.fillText('rentables', left+width/2, top+height/2 + 14);
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  function renderSalesOverTimeChart(){
+    const map = {};
+    state.filtered.forEach(r=>{
+      const k = r.YEAR_MONTH; // usa YEAR_ID/MONTH_ID (ya validados), no ORDERDATE
+      map[k] = (map[k]||0) + r.QUANTITYORDERED; // suma de unidades pedidas (QUANTITYORDERED)
+    });
+    const keys = Object.keys(map).sort();
+    const labels = keys.map(formatMonthLabel); // ej. "2003-enero", "2003-febrero"...
+    const data = keys.map(k=>map[k]);
+
+    // Da suficiente ancho al canvas para que quepan TODAS las etiquetas año-mes sin que
+    // Chart.js las oculte automáticamente (autoSkip); el contenedor exterior scrollea si hace falta.
+    const outer = document.getElementById('salesOverTimeOuter');
+    const inner = document.getElementById('salesOverTimeInner');
+    const minWidthPerLabel = 60; // px por mes, suficiente para "2003-septiembre" en diagonal
+    const neededWidth = Math.max(outer ? outer.clientWidth : 0, labels.length * minWidthPerLabel);
+    if(inner) inner.style.width = neededWidth + 'px';
+
+    destroyChart('salesOverTime');
+    const ctx = document.getElementById('chartSalesOverTime').getContext('2d');
+    charts.salesOverTime = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:'Unidades vendidas',
+          data,
+          borderColor:'#00beea',
+          backgroundColor:'rgba(0,190,234,0.18)',
+          fill:true,
+          tension:.3,
+          pointRadius:3,
+          pointBackgroundColor:'#00beea',
+          pointBorderColor:'#ffffff',
+          pointBorderWidth:1.5,
+          datalabels: dataLabelsReady ? {
+            display:true,
+            align:'top',
+            anchor:'end',
+            offset:4,
+            font:{size:9, weight:'600'},
+            color:'#1c2363',
+            formatter:(v)=> fmtNum(v)
+          } : { display:false }
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:22 } },
+        scales:{
+          y:{ beginAtZero:true, ticks:{callback:(v)=>fmtNum(v)}, grid:{color:'#eef1f6'} },
+          x:{ grid:{display:false}, ticks:{ autoSkip:false, maxRotation:60, minRotation:45, font:{size:10} } }
+        },
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmtNum(c.parsed.y) + ' unidades'}} }
+      }
+    });
+  }
+
+  function renderProfitEvolutionChart(){
+    const map = {};
+    state.filtered.forEach(r=>{
+      // Sin columna de costo real disponible, "beneficio" se calcula aquí como el total de Ventas del año.
+      map[r.YEAR_ID] = (map[r.YEAR_ID]||0) + r.SALES;
+    });
+    const labels = Object.keys(map).sort();
+    const data = labels.map(l=>map[l]);
+    const maxVal = Math.max(0, ...data);
+    const minVal = Math.min(0, ...data);
+    const step = niceStep(Math.max(Math.abs(maxVal), Math.abs(minVal)));
+    const suggestedMax = Math.ceil(maxVal / step) * step;
+    const suggestedMin = minVal < 0 ? Math.floor(minVal / step) * step : 0;
+
+    destroyChart('profitEvolution');
+    const ctx = document.getElementById('chartProfitEvolution').getContext('2d');
+    charts.profitEvolution = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:'Beneficios (ventas totales)',
+          data,
+          borderColor:'#1c2363',
+          backgroundColor:'#1c2363',
+          fill:false,
+          tension:.35,
+          borderWidth:2.5,
+          pointRadius:6,
+          pointBackgroundColor:'#1c2363',
+          pointBorderColor:'#ffffff',
+          pointBorderWidth:2
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{ min:suggestedMin, max:suggestedMax, ticks:{ stepSize:step, callback:(v)=> fmtEURFull(v) }, grid:{color:'#eef1f6'} },
+          x:{ grid:{display:false} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmtEURFull(c.parsed.y)}} }
+      }
+    });
+  }
+
+  function renderProductLineChart(){
+    const map = {};
+    state.filtered.forEach(r=>{
+      const k = r.PRODUCTLINE;
+      if(!map[k]) map[k] = {sales:0, marginNum:0, marginDen:0};
+      map[k].sales += r.SALES;
+      map[k].marginNum += r.MARGIN_PCT * r.SALES;
+      map[k].marginDen += r.SALES;
+    });
+    const labels = Object.keys(map).sort((a,b)=>map[b].sales-map[a].sales);
+    const sales = labels.map(k=>map[k].sales);
+    const margin = labels.map(k=> map[k].marginDen ? map[k].marginNum/map[k].marginDen : 0);
+
+    destroyChart('productline');
+    const ctx = document.getElementById('chartProductLine').getContext('2d');
+    charts.productline = new Chart(ctx, {
+      data:{
+        labels: labels,
+        datasets:[
+          {type:'bar', label:'Ventas', data:sales, backgroundColor:'#1c2363', borderRadius:4, yAxisID:'y'},
+          {type:'line', label:'Margen %', data:margin, borderColor:'#00beea', backgroundColor:'#00beea', tension:.3, yAxisID:'y1', pointRadius:3}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{ beginAtZero:true, ticks:{callback:(v)=>fmtEUR(v)}, grid:{color:'#eef1f6'} },
+          y1:{ position:'right', ticks:{callback:(v)=>(Math.round(v*10)/10)+'%'}, grid:{display:false} },
+          x:{ grid:{display:false} }
+        },
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10,usePointStyle:true}} }
+      }
+    });
+  }
+
+  function renderSalesByLineChart(){
+    const map = {};
+    state.filtered.forEach(r=>{ map[r.PRODUCTLINE] = (map[r.PRODUCTLINE]||0) + r.SALES; });
+    const labels = Object.keys(map).sort((a,b)=> map[b]-map[a]);
+    const data = labels.map(l=>map[l]);
+
+    destroyChart('salesbyline');
+    const ctx = document.getElementById('chartSalesByLine').getContext('2d');
+    charts.salesbyline = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ label:'Ventas', data, backgroundColor:'#1c2363', borderRadius:4 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ grid:{display:false} }, // líneas de producto en el eje horizontal
+          y:{ beginAtZero:true, ticks:{callback:(v)=>fmtNum(v)}, grid:{color:'#eef1f6'} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmtNum(c.parsed.y)}} }
+      }
+    });
+  }
+
+  function renderSalesByTerritoryChart(){
+    const map = {};
+    state.filtered.forEach(r=>{ map[r.TERRITORY] = (map[r.TERRITORY]||0) + r.QUANTITYORDERED; });
+    const labels = Object.keys(map).sort((a,b)=> map[b]-map[a]);
+    const data = labels.map(l=>map[l]);
+
+    destroyChart('salesbyterritory');
+    const ctx = document.getElementById('chartSalesByTerritory').getContext('2d');
+    charts.salesbyterritory = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ label:'Unidades vendidas', data, backgroundColor:'#00beea', borderRadius:4 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ grid:{display:false} },
+          y:{ beginAtZero:true, ticks:{callback:(v)=>fmtNum(v)}, grid:{color:'#eef1f6'} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmtNum(c.parsed.y) + ' unidades'}} }
+      }
+    });
+  }
+
+  function renderProfitByTerritoryChart(){
+    // Sin columna de costo real disponible: "beneficio" se usa aquí como total de Ventas (€) por territorio
+    const map = {};
+    state.filtered.forEach(r=>{ map[r.TERRITORY] = (map[r.TERRITORY]||0) + r.SALES; });
+    const labels = Object.keys(map).sort((a,b)=> map[b]-map[a]);
+    const data = labels.map(l=>map[l]);
+
+    destroyChart('profitbyterritory');
+    const ctx = document.getElementById('chartProfitByTerritory').getContext('2d');
+    charts.profitbyterritory = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ label:'Beneficios (ventas totales)', data, backgroundColor:'#1c2363', borderRadius:4 }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ grid:{display:false} },
+          y:{ beginAtZero:true, ticks:{callback:(v)=>fmtEUR(v)}, grid:{color:'#eef1f6'} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmtEUR(c.parsed.y)}} }
+      }
+    });
+  }
+
+  function renderTopCustomersChart(){
+    const map = {};
+    state.filtered.forEach(r=>{ map[r.CUSTOMERNAME || 'N/D'] = (map[r.CUSTOMERNAME || 'N/D']||0) + r.SALES; });
+    const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+    destroyChart('topcustomers');
+    const ctx = document.getElementById('chartTopCustomers').getContext('2d');
+    charts.topcustomers = new Chart(ctx, {
+      type:'bar',
+      data:{ labels: entries.map(e=>e[0]), datasets:[{ label:'Ventas', data: entries.map(e=>e[1]), backgroundColor:'#1c2363', borderRadius:4 }] },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ beginAtZero:true, ticks:{callback:(v)=>fmtEUR(v)}, grid:{color:'#eef1f6'} },
+          y:{ grid:{display:false} }
+        },
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=> fmtEUR(c.parsed.x)}} }
+      }
+    });
+  }
+
+  // Colores por STATUS, consistentes con los badges de la tabla de detalle
+  function getStatusColor(status){
+    const map = {
+      'Shipped':'#008257',
+      'Cancelled':'#d64545',
+      'Disputed':'#b06a00',
+      'On Hold':'#6d3fc4',
+      'In Process':'#00beea',
+      'Resolved':'#1c2363'
+    };
+    return map[status] || '#6b7280';
+  }
+
+  function renderStatusOverTimeChart(){
+    const statuses = Array.from(new Set(state.filtered.map(r=>r.STATUS))).sort();
+    const monthMap = {}; // 'YYYY-MM' -> { status: Set(ORDERNUMBER) }
+    state.filtered.forEach(r=>{
+      const k = r.YEAR_MONTH;
+      if(!monthMap[k]) monthMap[k] = {};
+      if(!monthMap[k][r.STATUS]) monthMap[k][r.STATUS] = new Set();
+      monthMap[k][r.STATUS].add(r.ORDERNUMBER);
+    });
+    const keys = Object.keys(monthMap).sort();
+    const labels = keys.map(formatMonthLabel);
+
+    // Mismo patrón de ancho dinámico que "Ventas a lo largo del tiempo", para que quepan todos los meses
+    const outer = document.getElementById('statusOverTimeOuter');
+    const inner = document.getElementById('statusOverTimeInner');
+    const minWidthPerLabel = 46;
+    const neededWidth = Math.max(outer ? outer.clientWidth : 0, keys.length * minWidthPerLabel);
+    if(inner) inner.style.width = neededWidth + 'px';
+
+    const datasets = statuses.map(st => ({
+      label: st,
+      data: keys.map(k => (monthMap[k][st] ? monthMap[k][st].size : 0)),
+      backgroundColor: getStatusColor(st),
+      stack: 'orders',
+      borderRadius: 2
+    }));
+
+    destroyChart('statusOverTime');
+    const ctx = document.getElementById('chartStatusOverTime').getContext('2d');
+    charts.statusOverTime = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ stacked:true, grid:{display:false}, ticks:{ autoSkip:false, maxRotation:60, minRotation:45, font:{size:10} } },
+          y:{ stacked:true, beginAtZero:true, ticks:{callback:(v)=>fmtNum(v)}, grid:{color:'#eef1f6'} }
+        },
+        plugins:{
+          legend:{position:'bottom', labels:{boxWidth:10, usePointStyle:true, font:{size:10.5}}},
+          tooltip:{callbacks:{label:(c)=> c.dataset.label + ': ' + fmtNum(c.parsed.y) + ' pedidos'}}
+        }
+      }
+    });
+  }
+
+  function renderProfitBySemesterChart(){
+    // Beneficio por línea usando la misma base que MARGIN_PCT, en euros: (cantidad × MSRP) − ventas
+    const productLines = Array.from(new Set(state.filtered.map(r=>r.PRODUCTLINE))).sort();
+    const semesterMap = {}; // 'AAAA-S1'/'AAAA-S2' -> { productline: beneficio }
+    state.filtered.forEach(r=>{
+      let month = parseInt(r.MONTH_ID, 10);
+      if(!month && r.ORDERDATE instanceof Date && !isNaN(r.ORDERDATE.getTime())) month = r.ORDERDATE.getMonth()+1;
+      const year = r.YEAR_ID || (r.ORDERDATE instanceof Date ? r.ORDERDATE.getFullYear() : 'N/D');
+      const sem = (month && month <= 6) ? 'S1' : 'S2';
+      const label = year + ' ' + sem;
+      if(!semesterMap[label]) semesterMap[label] = {};
+      const profit = (r.QUANTITYORDERED * r.MSRP) - r.SALES;
+      semesterMap[label][r.PRODUCTLINE] = (semesterMap[label][r.PRODUCTLINE] || 0) + profit;
+    });
+    const semesterLabels = Object.keys(semesterMap).sort();
+    const datasets = semesterLabels.map((sem, i)=>({
+      label: sem,
+      data: productLines.map(pl => semesterMap[sem][pl] || 0),
+      backgroundColor: PALETTE[i % PALETTE.length],
+      borderRadius: 4
+    }));
+
+    destroyChart('profitsemester');
+    const ctx = document.getElementById('chartProfitBySemester').getContext('2d');
+    charts.profitsemester = new Chart(ctx, {
+      type:'bar',
+      data:{ labels: productLines, datasets }, // líneas de producto en el eje horizontal
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          x:{ grid:{display:false} },
+          y:{ beginAtZero:true, ticks:{callback:(v)=>fmtEUR(v)}, grid:{color:'#eef1f6'} }
+        },
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10,usePointStyle:true, font:{size:10.5}}} }
+      }
+    });
+  }
+
+  let countryMapSvg = null, countryMapRenderToken = 0;
+  async function renderCountryMap(){
+    const myToken = ++countryMapRenderToken;
+    const statusEl = document.getElementById('countryMapStatus');
+    const legendEl = document.getElementById('countryMapLegend');
+    const tooltipEl = document.getElementById('countryMapTooltip');
+    const holder = document.getElementById('chartCountryMap');
+
+    // Agregado de ventas por país con los datos ya filtrados
+    const salesByCountry = {};
+    state.filtered.forEach(r=>{ salesByCountry[r.COUNTRY] = (salesByCountry[r.COUNTRY]||0) + r.SALES; });
+
+    try{
+      statusEl.textContent = 'Cargando mapa…';
+      statusEl.classList.remove('hidden');
+      await ensureMapLibs();
+      const features = await loadWorldAtlas();
+      if(myToken !== countryMapRenderToken) return; // otra actualización más reciente ya está en curso
+
+      const d3l = window.d3;
+      holder.innerHTML = '';
+      const width = holder.clientWidth || 600, height = holder.clientHeight || 300;
+
+      const values = Object.values(salesByCountry);
+      const maxVal = values.length ? Math.max(...values) : 0;
+      const colorScale = d3l.scaleLinear()
+        .domain([0, maxVal * 0.15, maxVal * 0.5, maxVal || 1])
+        .range(['#e5f9fd', '#00beea', '#008257', '#1c2363'])
+        .clamp(true);
+
+      const projection = d3l.geoNaturalEarth1().fitSize([width, height], {type:'FeatureCollection', features});
+      const path = d3l.geoPath(projection);
+
+      const svg = d3l.select(holder).append('svg').attr('viewBox', '0 0 '+width+' '+height);
+      countryMapSvg = svg;
+
+      svg.selectAll('path.map-country')
+        .data(features)
+        .enter()
+        .append('path')
+        .attr('class', d => {
+          const name = isoToDatasetName(d.id, salesByCountry);
+          return 'map-country' + (name ? ' has-data' : '');
+        })
+        .attr('d', path)
+        .attr('fill', d => {
+          const name = isoToDatasetName(d.id, salesByCountry);
+          return name ? colorScale(salesByCountry[name]) : '#e3e7ee';
+        })
+        .on('mousemove', function(event, d){
+          const name = isoToDatasetName(d.id, salesByCountry);
+          if(!name) { tooltipEl.style.display = 'none'; return; }
+          const rect = holder.getBoundingClientRect();
+          tooltipEl.style.display = 'block';
+          tooltipEl.style.left = (event.clientX - rect.left) + 'px';
+          tooltipEl.style.top = (event.clientY - rect.top) + 'px';
+          tooltipEl.innerHTML = '<strong>'+name+'</strong>' + fmtEUR(salesByCountry[name]);
+        })
+        .on('mouseleave', function(){ tooltipEl.style.display = 'none'; });
+
+      statusEl.classList.add('hidden');
+
+      // Leyenda con mínimo/máximo
+      legendEl.innerHTML = '<span>€0</span><div class="grad"></div><span>'+fmtEUR(maxVal)+'</span>';
+
+      // Si ningún país del dataset se pudo mapear al mapa, avisar
+      const anyMatched = Object.keys(salesByCountry).some(name => datasetNameToIso(name) !== null);
+      if(!anyMatched && Object.keys(salesByCountry).length){
+        statusEl.textContent = 'No se reconocen los nombres de país para pintarlos en el mapa.';
+        statusEl.classList.remove('hidden');
+      }
+    }catch(err){
+      if(myToken !== countryMapRenderToken) return;
+      console.error(err);
+      statusEl.textContent = 'No se pudo cargar el mapa (revisa tu conexión). Reintenta actualizando.';
+      statusEl.classList.remove('hidden');
+      legendEl.innerHTML = '';
+    }
+  }
+
+  function datasetNameToIso(name){
+    return COUNTRY_ISO_MAP[name] !== undefined ? String(COUNTRY_ISO_MAP[name]) : null;
+  }
+  function isoToDatasetName(featureId, salesByCountry){
+    const idStr = String(parseInt(featureId, 10));
+    for(const name of Object.keys(salesByCountry)){
+      const iso = datasetNameToIso(name);
+      if(iso !== null && iso === idStr) return name;
+    }
+    return null;
+  }
+
+  function renderStatusChart(){
+    const map = {};
+    state.filtered.forEach(r=>{ map[r.STATUS] = (map[r.STATUS]||0) + 1; });
+    const labels = Object.keys(map);
+    destroyChart('status');
+    const ctx = document.getElementById('chartStatus').getContext('2d');
+    charts.status = new Chart(ctx, {
+      type:'doughnut',
+      data:{ labels, datasets:[{ data: labels.map(l=>map[l]), backgroundColor: labels.map((_,i)=>PALETTE[i%PALETTE.length]) }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'right', labels:{boxWidth:10, usePointStyle:true, font:{size:11}}} } }
+    });
+  }
+
+  function renderTopBottomChart(){
+    const map = {};
+    state.filtered.forEach(r=>{
+      const k = r.PRODUCTCODE || 'N/D';
+      if(!map[k]) map[k] = {num:0, den:0};
+      map[k].num += r.MARGIN_PCT * r.SALES;
+      map[k].den += r.SALES;
+    });
+    const arr = Object.entries(map)
+      .filter(e=>e[1].den>0)
+      .map(([k,v])=>({code:k, margin: v.num/v.den}))
+      .sort((a,b)=>b.margin-a.margin);
+    const top5 = arr.slice(0,5);
+    const bottom5 = arr.slice(-5).reverse();
+    const combined = [...top5, ...bottom5];
+    destroyChart('topbottom');
+    const ctx = document.getElementById('chartTopBottom').getContext('2d');
+    charts.topbottom = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: combined.map(c=>c.code),
+        datasets:[{ label:'Margen %', data: combined.map(c=>c.margin),
+          backgroundColor: combined.map(c=> c.margin>=0 ? '#008257' : '#d64545'), borderRadius:4 }]
+      },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        scales:{ x:{ ticks:{callback:(v)=>(Math.round(v*10)/10)+'%'}, grid:{color:'#eef1f6'} }, y:{ grid:{display:false} } },
+        plugins:{ legend:{display:false} }
+      }
+    });
+  }
+
+  /* ============ TABLE ============ */
+  els.tableSearch.addEventListener('input', (e)=>{
+    state.search = e.target.value.toLowerCase();
+    state.page = 1;
+    renderTable();
+  });
+
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.key;
+      if(state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortKey = key; state.sortDir = 'asc'; }
+      renderTable();
+    });
+  });
+
+  els.prevPage.addEventListener('click', ()=>{ if(state.page>1){ state.page--; renderTable(); } });
+  els.nextPage.addEventListener('click', ()=>{
+    const totalPages = Math.max(1, Math.ceil(getSearched().length / state.pageSize));
+    if(state.page < totalPages){ state.page++; renderTable(); }
+  });
+
+  function getSearched(){
+    if(!state.search) return state.filtered;
+    return state.filtered.filter(r=>{
+      return (String(r.CUSTOMERNAME||'') + ' ' + String(r.PRODUCTCODE||'') + ' ' + String(r.CITY||'') + ' ' + String(r.ORDERNUMBER||''))
+        .toLowerCase().includes(state.search);
+    });
+  }
+
+  function renderTable(){
+    let rows = getSearched().slice();
+    rows.sort((a,b)=>{
+      let va = a[state.sortKey], vb = b[state.sortKey];
+      if(va instanceof Date) va = va.getTime();
+      if(vb instanceof Date) vb = vb.getTime();
+      if(typeof va === 'string') va = va.toLowerCase();
+      if(typeof vb === 'string') vb = vb.toLowerCase();
+      if(va < vb) return state.sortDir === 'asc' ? -1 : 1;
+      if(va > vb) return state.sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
+    if(state.page > totalPages) state.page = totalPages;
+    const start = (state.page-1)*state.pageSize;
+    const pageRows = rows.slice(start, start+state.pageSize);
+
+    els.tableBody.innerHTML = pageRows.map(r=>{
+      const marginClass = r.MARGIN_PCT >= 0 ? 'margin-pos' : 'margin-neg';
+      const statusClass = String(r.STATUS).replace(/\s+/g,'');
+      return '<tr>'+
+        '<td>'+ (r.ORDERNUMBER ?? '—') +'</td>'+
+        '<td>'+ fmtDate(r.ORDERDATE) +'</td>'+
+        '<td>'+ (r.CUSTOMERNAME || '—') +'</td>'+
+        '<td>'+ (r.PRODUCTLINE || '—') +'</td>'+
+        '<td>'+ (r.PRODUCTCODE || '—') +'</td>'+
+        '<td>'+ fmtNum(r.QUANTITYORDERED) +'</td>'+
+        '<td class="mono">'+ fmtEUR(r.SALES) +'</td>'+
+        '<td class="mono '+marginClass+'">'+ fmtPct(r.MARGIN_PCT) +'</td>'+
+        '<td>'+ (r.DEALSIZE || '—') +'</td>'+
+        '<td>'+ (r.COUNTRY || '—') +'</td>'+
+        '<td><span class="badge '+statusClass+'">'+ (r.STATUS || '—') +'</span></td>'+
+      '</tr>';
+    }).join('');
+
+    els.tableCount.textContent = fmtNum(rows.length) + ' líneas';
+    els.pageLabel.textContent = state.page + ' / ' + totalPages;
+    els.prevPage.disabled = state.page <= 1;
+    els.nextPage.disabled = state.page >= totalPages;
+  }
+
+  /* ============ AUTO REFRESH ============ */
+  function setupAutoRefresh(){
+    if(state.timer){ clearInterval(state.timer); state.timer = null; }
+    const ms = parseInt(els.intervalSelect.value, 10);
+    if(ms > 0){
+      state.timer = setInterval(fetchData, ms);
+    }
+  }
+  els.intervalSelect.addEventListener('change', setupAutoRefresh);
+
+  /* ============ EVENTS ============ */
+  els.configBtn.addEventListener('click', ()=> els.connPanel.classList.toggle('open'));
+  els.connectBtn.addEventListener('click', ()=>{
+    els.connPanel.classList.remove('open');
+    fetchData();
+  });
+  els.urlInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ els.connPanel.classList.remove('open'); fetchData(); } });
+  els.refreshBtn.addEventListener('click', fetchData);
+
+  setupAutoRefresh();
+
+  // Auto-carga inicial: si ya hay una URL precargada, se conecta automáticamente al abrir el dashboard
+  if(getStoredUrl()){
+    fetchData();
+  }
+})();
+</script>
+</body>
+</html>
